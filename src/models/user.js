@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
     // static associate(models) {
-    //   // define association here
     // }
   }
   User.init({
@@ -31,5 +30,8 @@ module.exports = (sequelize, DataTypes) => {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   });
+  // User.hasMany(models.Subscription, {
+  //   foreignKey: 'user_id',
+  // })
   return User;
 };
