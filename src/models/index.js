@@ -19,11 +19,13 @@ const Subscription = require('./subscription')(sequelize, Sequelize.DataTypes);
 User.hasMany(Subscription, {
   foreignKey: 'user_id',
   as: 'subscriptions',
+  onDelete: 'cascade',
 });
 
 Subscription.belongsTo(User, {
   foreignKey: 'user_id',
   as: 'user',
+  onDelete: 'cascade',
 });
 
 Subscription.belongsTo(Plan, {
@@ -34,6 +36,7 @@ Subscription.belongsTo(Plan, {
 Plan.hasMany(Subscription, {
   foreignKey: 'plan_id',
   as: 'subscriptions',
+  onDelete: 'cascade',
 });
 
 const db = {

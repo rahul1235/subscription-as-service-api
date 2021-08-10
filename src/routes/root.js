@@ -89,8 +89,10 @@ module.exports = async function (fastify) {
     const sqlDate = (luxon.DateTime.fromISO(date).toSQLDate());
     if (date) {
       whereFilter.start_date = {
-        [Op.gte]: sqlDate,
         [Op.lte]: sqlDate,
+      };
+      whereFilter.end_date = {
+        [Op.gte]: sqlDate,
       };
     }
     const userSubscriptions = await User.findOne({
@@ -104,7 +106,20 @@ module.exports = async function (fastify) {
         include: ['plan'],
       },
     });
-    reply.send(userSubscriptions);
+    const dataToReturn = userSubscriptions.subscriptions.map((values) => {
+      if (date) {
+        return ({
+          plan_id: values.plan.plan_id,
+          days_left: luxon.DateTime.fromISO(values.end_date).diff(luxon.DateTime.now(), 'days').days,
+        });
+      }
+      return ({
+        plan_id: values.plan.plan_id,
+        start_date: values.start_date,
+        valid_til: values.end_date,
+      });
+    });
+    reply.send(dataToReturn);
   });
 
   fastify.post('/subscription', async (request, reply) => {
