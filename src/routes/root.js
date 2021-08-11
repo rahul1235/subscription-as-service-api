@@ -5,7 +5,24 @@ module.exports = async function (fastify) {
   // Declare a route
 
   const { User, Plan, Subscription } = fastify.sequelize();
-  fastify.post('/users', async (request, reply) => {
+  const createUserSchema = {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'userName',
+        ],
+        properties: {
+          userName: {
+            type: 'string',
+            minLength: 3,
+          },
+        },
+      },
+    },
+  };
+  fastify.post('/users', createUserSchema, async (request, reply) => {
     try {
       const { userName } = request.body;
       const userData = await User.create({
@@ -45,33 +62,6 @@ module.exports = async function (fastify) {
           user_name: username,
         },
       });
-      // Plan.bulkCreate([
-      //   {
-      //     plan_id: "FREE",
-      //     validity_in_days: 'Infinity',
-      //     cost: 0.0,
-      //   },
-      //   {
-      //     plan_id: "TRIAL",
-      //     validity_in_days: 7,
-      //     cost: 0.0,
-      //   },
-      //   {
-      //     plan_id: "LITE_1M",
-      //     validity_in_days: 30,
-      //     cost: 100,
-      //   },
-      //   {
-      //     plan_id: "PRO_1M",
-      //     validity_in_days: 30,
-      //     cost: 200,
-      //   },
-      //   {
-      //     plan_id: "LITE_6M",
-      //     validity_in_days: 180,
-      //     cost: 500,
-      //   },
-      // ])
       if (!userData) {
         return reply.status(400).send({ message: 'Invalid user' });
       }
@@ -95,7 +85,7 @@ module.exports = async function (fastify) {
         [Op.gte]: sqlDate,
       };
     }
-    const userSubscriptions = await User.findOne({
+    const user = await User.findOne({
       where: {
         user_name: username,
       },
@@ -106,7 +96,13 @@ module.exports = async function (fastify) {
         include: ['plan'],
       },
     });
-    const dataToReturn = userSubscriptions.subscriptions.map((values) => {
+    if (!user) {
+      return reply.status(400).send({
+        status: 'FAILIURE',
+        message: 'Invalid User',
+      });
+    }
+    const dataToReturn = user.subscriptions.map((values) => {
       if (date) {
         return ({
           plan_id: values.plan.plan_id,
@@ -119,10 +115,35 @@ module.exports = async function (fastify) {
         valid_til: values.end_date,
       });
     });
-    reply.send(dataToReturn);
+    return reply.send(dataToReturn);
   });
 
-  fastify.post('/subscription', async (request, reply) => {
+  const createSubscriptionSchema = {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'user_name', 'plan_id', 'start_date',
+        ],
+        properties: {
+          user_name: {
+            type: 'string',
+            minLength: 3,
+          },
+          plan_id: {
+            type: 'string',
+            minLength: 3,
+          },
+          start_date: {
+            type: 'string',
+            minLength: 10,
+          },
+        },
+      },
+    },
+  };
+  fastify.post('/subscription', createSubscriptionSchema, async (request, reply) => {
     try {
       // eslint-disable-next-line camelcase
       const { user_name, plan_id, start_date } = request.body;
